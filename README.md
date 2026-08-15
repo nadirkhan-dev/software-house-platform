@@ -84,18 +84,6 @@ fails the build rather than shipping.
 
 ---
 
-## Demo accounts
-
-Local development only. Password for all: `marginly`
-
-
-**Lahore Labs** — a second agency, to demonstrate isolation
-
-| Email | Role |
-|---|---|
-| `rehan@lahorelabs.pk` | admin |
-| `ap@acme.example` | client |
-
 **Platform**
 
 | Email | Role |

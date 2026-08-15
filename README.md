@@ -88,16 +88,6 @@ fails the build rather than shipping.
 
 Local development only. Password for all: `marginly`
 
-**KDC Digital**
-
-| Email | Role | Sees |
-|---|---|---|
-| `ayesha@kdc.pk` | admin | everything |
-| `nadia@kdc.pk` | finance | money, invoicing, payments, expense approval |
-| `tariq@kdc.pk` | sales | pipeline and quotes, no salaries |
-| `bilal@kdc.pk` | pm | delivery and revenue, no cost rates |
-| `sana@kdc.pk` | developer | her own tasks and hours, no financial data at all |
-| `procurement@northwind.example` | client | Northwind's projects, quotes and invoices only |
 
 **Lahore Labs** — a second agency, to demonstrate isolation
 

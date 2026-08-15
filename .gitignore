@@ -1,0 +1,44 @@
+# Dependencies. Matches client/node_modules too — a bare directory name
+# applies at every depth.
+node_modules/
+
+# Secrets. SESSION_SECRET and ENCRYPTION_KEY live here, and a committed session
+# secret lets anyone who has read the history forge a session for any user in
+# any tenant. .env.example is the template and must stay tracked.
+.env
+.env.*
+!.env.example
+
+# Uploaded documents. Client deliverables and contracts, keyed by tenant —
+# never the repository's business. STORAGE_DIR moves this in production.
+storage/
+
+# Build output. vite writes the client here with emptyOutDir: true, so the
+# whole directory is derived and is wiped on every `npm run build`.
+# NOTE: with this ignored, a fresh clone must run `npm run build` before
+# `npm start` has anything to serve. Delete this line if you would rather ship
+# the built client in the repository, as the handover archive does.
+public/
+
+# Logs and crash reports
+*.log
+npm-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Test and coverage artefacts
+coverage/
+.nyc_output/
+*.lcov
+
+# Editors and operating systems
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+
+# Local scratch: archives of this project, and anything parked for a moment
+*.tgz
+*.tar.gz
+tmp/

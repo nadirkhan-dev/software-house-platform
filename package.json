@@ -1,0 +1,29 @@
+{
+  "name": "marginly",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Margin engine for software houses that earn in dollars and spend in rupees",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "concurrently -n api,web -c blue,magenta \"node --watch src/server.js\" \"npm --prefix client run dev\"",
+    "build": "npm --prefix client install && npm --prefix client run build",
+    "migrate": "node db/migrate.js",
+    "seed": "node db/seed.js",
+    "reset": "npm run migrate && npm run seed",
+    "test": "NODE_ENV=test node --test --test-concurrency=1 test/*.test.js",
+    "postinstall": "node -e \"process.exit(0)\""
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cookie-parser": "^1.4.7",
+    "express": "^4.21.2",
+    "nodemailer": "^9.0.5",
+    "pdfkit": "^0.19.1",
+    "pg": "^8.13.1",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.4"
+  }
+}

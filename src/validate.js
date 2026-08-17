@@ -171,7 +171,7 @@ export const schemas = {
   invite: z.object({
     email: z.string().trim().toLowerCase().email('Enter a valid email address').max(320),
     full_name: z.string().trim().min(1, 'Give their name').max(160),
-    role: z.enum(['admin','finance','sales','pm','lead','developer','designer','qa']),
+    role: z.literal('developer', 'New members join as developers').optional(),
     weekly_hours: z.coerce.number().min(0).max(80).optional(),
     cost_amount: z.coerce.number().min(0).max(1e9).optional(),
     bill_rate: z.coerce.number().min(0).max(1e6).optional(),

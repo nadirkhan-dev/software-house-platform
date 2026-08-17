@@ -7,6 +7,7 @@ import { applyTheme, readTheme, type Theme } from '../lib/theme';
 import type { Notification, SearchHit } from '../lib/types';
 import { dayLabel } from '../lib/format';
 import { QuickCreate } from './QuickCreate';
+import { NAV_ICONS, SidebarIcon, SunIcon, MoonIcon, SignOutIcon } from './icons';
 
 const NAV = [
   { to: '/', label: 'Dashboard', key: '1' },
@@ -32,11 +33,13 @@ export function Shell({ children }: { children: React.ReactNode }) {
   const [theme, setTheme] = useState<Theme>(readTheme);
   const [collapsed, setCollapsed] = useState(false);
   const [bellOpen, setBellOpen] = useState(false);
+  const [userOpen, setUserOpen] = useState(false);
   const [quickOpen, setQuickOpen] = useState(false);
   const [term, setTerm] = useState('');
   const [debounced, setDebounced] = useState('');
   const [sel, setSel] = useState(-1);
   const searchRef = useRef<HTMLInputElement>(null);
+  const userWrap = useRef<HTMLDivElement>(null);
 
   useEffect(() => applyTheme(theme), [theme]);
 
@@ -74,6 +77,25 @@ export function Shell({ children }: { children: React.ReactNode }) {
     return () => document.removeEventListener('keydown', onKey);
   }, [nav]);
 
+  /* The account menu closes on an outside click or Escape rather than on
+     mouseleave, the way the notifications panel does: this one holds a theme
+     control people adjust and compare, so a menu that vanishes the moment the
+     pointer strays is a menu that fights them. Listening on mousedown, not
+     click, so it closes on the press instead of waiting for release. */
+  useEffect(() => {
+    if (!userOpen) return;
+    const onDown = (e: MouseEvent) => {
+      if (!userWrap.current?.contains(e.target as Node)) setUserOpen(false);
+    };
+    const onEsc = (e: KeyboardEvent) => { if (e.key === 'Escape') setUserOpen(false); };
+    document.addEventListener('mousedown', onDown);
+    document.addEventListener('keydown', onEsc);
+    return () => {
+      document.removeEventListener('mousedown', onDown);
+      document.removeEventListener('keydown', onEsc);
+    };
+  }, [userOpen]);
+
   if (!user || !perms) return null;
 
   const items = NAV.filter(n =>
@@ -83,6 +105,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
     (!perms.isClient || ['/', '/projects', '/quotes', '/invoices', '/documents'].includes(n.to)));
 
   const hits = results?.results ?? [];
+  const initials = user.name.split(' ').map(w => w[0]).slice(0, 2).join('');
 
   const openHit = (h: SearchHit) => {
     setTerm(''); setSel(-1);
@@ -95,28 +118,32 @@ export function Shell({ children }: { children: React.ReactNode }) {
         <div className="brand">
           <b>Marginly</b><span>v1.0</span>
           <button className="railtoggle" onClick={() => setCollapsed(c => !c)}
-            aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}>{collapsed ? '›' : '‹'}</button>
+            data-tip={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            aria-expanded={!collapsed}>
+            <SidebarIcon />
+          </button>
         </div>
         <div className="brandrule" />
         <nav className="navgrp">
           <div className="navlbl">{perms.isClient ? 'Client' : 'Operations'}</div>
           {items.map(n => (
-            <NavLink key={n.to} to={n.to} end={n.to === '/'}
+            /* data-tip feeds the CSS tooltip shown when the rail is collapsed, and
+               aria-label carries the same name for screen readers — the visible
+               label is display:none by then, so it leaves the accessibility tree
+               with it and the icon alone would announce as an unnamed link. */
+            <NavLink key={n.to} to={n.to} end={n.to === '/'} data-tip={n.label} aria-label={n.label}
               className={({ isActive }) => `nav ${isActive ? 'on' : ''}`}>
-              <span className="k">{n.key ?? '·'}</span><span className="nt">{n.label}</span>
+              {/* No shortcut digit rendered. The keys still work — the handler
+                  reads n.key straight off NAV — they are just not on screen. */}
+              <span className="ni">{NAV_ICONS[n.to]}</span>
+              <span className="nt">{n.label}</span>
             </NavLink>
           ))}
         </nav>
-        <div className="railfoot">
-          <div className="who">
-            <div className="avatar">{user.name.split(' ').map(w => w[0]).slice(0, 2).join('')}</div>
-            <div className="nt">
-              <div className="nm">{user.name}</div>
-              <div className="rl">{user.role} · {user.tenant}</div>
-            </div>
-          </div>
-          <button className="btn tiny" onClick={() => { void signOut(); }}>Sign out</button>
-        </div>
+        {/* The rail footer that used to sit here — avatar, name, Sign out — moved
+            into the account menu in the top bar. Two places to sign out and two
+            places to read your own name is one of each too many. */}
       </aside>
 
       <div className="main">
@@ -130,7 +157,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
                 if (e.key === 'ArrowUp') { e.preventDefault(); setSel(s => (s - 1 + hits.length) % hits.length); }
                 if (e.key === 'Enter') { e.preventDefault(); const h = hits[sel < 0 ? 0 : sel]; if (h) openHit(h); }
               }}
-              type="search" placeholder="Search…  press /" aria-label="Search" autoComplete="off" />
+              type="search" placeholder="Search…" aria-label="Search" autoComplete="off" />
             {term.trim().length >= 2 && (
               <div className="results">
                 {hits.length ? hits.map((h, i) => (
@@ -152,11 +179,49 @@ export function Shell({ children }: { children: React.ReactNode }) {
               + Create
             </button>
           )}
-          <button className="topbtn" onClick={() => setBellOpen(o => !o)} aria-label="Notifications">
+          <button className="topbtn" onClick={() => { setBellOpen(o => !o); setUserOpen(false); }}
+            aria-label="Notifications">
             ◔{notes?.unread ? <span className="dot-badge">{notes.unread > 9 ? '9+' : notes.unread}</span> : null}
           </button>
-          <button className="topbtn" onClick={() => setTheme(t => (t === 'dark' ? 'light' : 'dark'))}
-            aria-label="Toggle light or dark theme">◐</button>
+
+          {/* Account menu. Holds what used to be spread between the top bar and
+              the rail footer: who you are, the theme switch, and sign out. */}
+          <div className="uwrap" ref={userWrap}>
+            <button className={`ubtn ${userOpen ? 'on' : ''}`}
+              onClick={() => { setUserOpen(o => !o); setBellOpen(false); }}
+              aria-label="Account" aria-haspopup="menu" aria-expanded={userOpen}>
+              <span className="avatar">{initials}</span>
+            </button>
+            {userOpen && (
+              <div className="umenu" role="menu">
+                <div className="uhead">
+                  <span className="avatar big">{initials}</span>
+                  <div className="uwho">
+                    <div className="nm">{user.name}</div>
+                    <div className="em">{user.email}</div>
+                    <div className="rl">{user.role} · {user.tenant}</div>
+                  </div>
+                </div>
+                <div className="urow">
+                  <span className="ulbl">Appearance</span>
+                  <div className="seg-toggle">
+                    <button className={theme === 'light' ? 'on' : ''}
+                      onClick={() => setTheme('light')} aria-pressed={theme === 'light'}>
+                      <SunIcon />Light
+                    </button>
+                    <button className={theme === 'dark' ? 'on' : ''}
+                      onClick={() => setTheme('dark')} aria-pressed={theme === 'dark'}>
+                      <MoonIcon />Dark
+                    </button>
+                  </div>
+                </div>
+                <button className="uitem" role="menuitem"
+                  onClick={() => { setUserOpen(false); void signOut(); }}>
+                  <SignOutIcon />Sign out
+                </button>
+              </div>
+            )}
+          </div>
 
           {bellOpen && (
             <div className="panel" onMouseLeave={() => setBellOpen(false)}>

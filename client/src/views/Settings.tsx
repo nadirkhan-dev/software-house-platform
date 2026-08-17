@@ -26,8 +26,6 @@ interface Integrations {
   storage: { driver: string; maxBytes: number };
 }
 
-const ROLES = ['admin', 'finance', 'sales', 'pm', 'lead', 'developer', 'designer', 'qa'] as const;
-
 export function Settings() {
   const { user, perms } = useSession();
   const toast = useToast();
@@ -131,12 +129,10 @@ export function Settings() {
                 <tr key={m.id} className={m.is_active ? '' : 'dim'}>
                   <td><div className="pname">{m.full_name}</div><div className="pclient">{m.email}</div></td>
                   <td>
-                    {readOnly || m.role === 'client' ? <span className="chip flat">{m.role}</span> : (
-                      <select className="inline" value={m.role}
-                        onChange={e => updateMember.mutate({ id: m.id, role: e.target.value })}>
-                        {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
-                      </select>
-                    )}
+                    {/* Single-admin workspace: roles are shown, never chosen. The
+                        server refuses any role but 'developer', so a dropdown here
+                        would only offer choices that come back as a 403. */}
+                    <span className="chip flat">{m.role}</span>
                     {m.client_name && <div className="pclient">{m.client_name}</div>}
                   </td>
                   <td className="num">{m.last_seen_at ? dayLabel(m.last_seen_at) : 'never'}</td>
@@ -202,9 +198,7 @@ function InviteModal({ onClose }: { onClose: () => void }) {
         <Field label="Email" error={errors.email}>
           <input type="email" value={f.email} onChange={e => setF({ ...f, email: e.target.value })} required /></Field>
         <Field label="Role">
-          <select value={f.role} onChange={e => setF({ ...f, role: e.target.value })}>
-            {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
-          </select></Field>
+          <input value="developer" disabled readOnly /></Field>
         <Field label="Monthly cost (home currency)">
           <input type="number" min="0" value={f.cost_amount} onChange={e => setF({ ...f, cost_amount: e.target.value })} /></Field>
         <Field label="Bill rate per hour">

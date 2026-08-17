@@ -207,7 +207,11 @@ platformRoutes.patch('/settings', writeLimiter, needAdmin,
 /** Invite a colleague. Creates the user if the address is new to the platform. */
 platformRoutes.post('/settings/team', writeLimiter, needAdmin,
   validate(schemas.invite), wrap(async (req, res) => {
-    const { email, full_name, role, weekly_hours, cost_amount, bill_rate } = req.body;
+    const { email, full_name, weekly_hours, cost_amount, bill_rate } = req.body;
+    // Single-admin workspace. Admin is held by the workspace owner alone and is
+    // not grantable over HTTP, so an invite has no role to choose: everybody
+    // joins as a developer and is widened, if ever, by hand in the database.
+    const role = 'developer';
     const out = await asOwner(async c => {
       await c.query('BEGIN');
       try {
@@ -249,6 +253,13 @@ platformRoutes.patch('/settings/team/:id', writeLimiter, needAdmin, wrap(async (
   const { role, is_active, weekly_hours } = req.body ?? {};
   if (role === undefined && is_active === undefined && weekly_hours === undefined) {
     return res.status(400).json({ error: 'Nothing to change' });
+  }
+  // Admin is not grantable over HTTP. Without this an admin could mint a second
+  // admin, and "one owner" would hold only until somebody clicked a dropdown.
+  if (role !== undefined && role !== 'developer') {
+    return res.status(403).json({
+      error: 'This workspace has a single admin. Other members can only be developers.',
+    });
   }
   // The last admin must not be able to demote or disable themselves: an agency
   // locked out of its own account is a support incident, not a security win.

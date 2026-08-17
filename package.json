@@ -10,6 +10,7 @@
     "build": "npm --prefix client install && npm --prefix client run build",
     "migrate": "node db/migrate.js",
     "seed": "node db/seed.js",
+    "create-admin": "node db/create-admin.js",
     "reset": "npm run migrate && npm run seed",
     "test": "NODE_ENV=test node --test --test-concurrency=1 test/*.test.js",
     "postinstall": "node -e \"process.exit(0)\""
